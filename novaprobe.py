@@ -1,21 +1,18 @@
 #!/usr/bin/python
 
-# Copyright (C) 2015 Daniel Vrcic <daniel.vrcic@srce.hr>
+# Copyright (C) 2015 SRCE
 #
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 3 of the License, or
-# (at your option) any later version.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
+# http://www.apache.org/licenses/LICENSE-2.0
 #
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software Foundation,
-# Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
-#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 #from pprint import pprint
 
@@ -306,7 +303,7 @@ def main():
             nagios_out('Critical', 'Could not launch server from image UUID:%s: %s' % (image, errmsg_from_excp(e)), 2)
 
 
-        i, s, e, sleepsec = 0, 0, 0, 1
+        i, s, e, sleepsec, tss = 0, 0, 0, 1, 3
         server_createt, server_deletet= 0, 0
         server_built = False
         st = time.time()
@@ -334,9 +331,13 @@ def main():
             except (requests.exceptions.ConnectionError,
                     requests.exceptions.Timeout, requests.exceptions.HTTPError,
                     AssertionError, IndexError, AttributeError) as e:
-                if argholder.verb:
+                if i < tss and argholder.verb:
                     sys.stdout.write('\n')
-                nagios_out('Critical', 'could not fetch server:%s status: %s' % (server_id, errmsg_from_excp(e)), 2)
+                    sys.stdout.write('Try to fetch server:%s status one more time. Error was %s' % (server_id,
+                                                                                                    errmsg_from_excp(e)))
+                    sys.stdout.write('Check server status every %ds: ' % (sleepsec))
+                else:
+                    nagios_out('Critical', 'could not fetch server:%s status: %s' % (server_id, errmsg_from_excp(e)), 2)
             i += 1
         else:
             if argholder.verb:
@@ -412,9 +413,14 @@ def main():
                         requests.exceptions.HTTPError, AssertionError,
                         IndexError, AttributeError) as e:
 
+                    server_deleted = True
+                    et = time.time()
+
                     if argholder.verb:
                         sys.stdout.write('\n')
-                    NAGIOS_OUT('Critical', 'could not fetch server:%s status: %s' % (server_id, errmsg_from_excp(e)), 2)
+                        sys.stdout.write('Could not fetch server:%s status: %s - server is DELETED' % (server_id,
+                                                                                                       errmsg_from_excp(e)))
+                        break
                 i += 1
             else:
                 if argholder.verb:
