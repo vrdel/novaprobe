@@ -116,7 +116,7 @@ def get_info(server, userca, capath, timeout):
     try:
         # extract public keystone URL from response
         keystone_server = re.search("Keystone.*=[\s'\"]*([\w:/\-_\.]*)[\s*\'\"]*", response.headers['www-authenticate']).group(1)
-    except(KeyError, IndexError, AttributeError) as e:
+    except(KeyError, IndexError, AttributeError, TypeError) as e:
         nagios_out('Critical', 'Could not fetch keystone server from response: Key not found %s ' % errmsg_from_excp(e), 2)
 
     if server_ok(keystone_server, capath, timeout):
