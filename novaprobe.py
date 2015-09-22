@@ -197,6 +197,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--endpoint', dest='endpoint', nargs='?')
     parser.add_argument('-v', dest='verb', action='store_true')
+    parser.add_argument('--flavor', dest='flavor', nargs='?')
+    parser.add_argument('--image', dest='image', nargs='?')
     parser.add_argument('--cert', dest='cert', nargs='?')
     parser.add_argument('-t', dest='timeout', type=int, nargs='?', default=120)
     parser.add_argument('--capath', dest='capath', nargs='?', default='/etc/grid-security/certificates')
@@ -226,15 +228,21 @@ def main():
                                                  argholder.timeout)
 
         # remove once endpoints properly expose images openstackish way
-        try:
-            image = re.search("(\?image=)([\w\-]*)", argholder.endpoint).group(2)
-        except (AttributeError, IndexError):
-            nagios_out('Unknown', 'image UUID is not specifed for endpoint', 3)
+        if not argholder.image:
+            try:
+                image = re.search("(\?image=)([\w\-]*)", argholder.endpoint).group(2)
+            except (AttributeError, IndexError):
+                nagios_out('Unknown', 'image UUID is not specifed for endpoint', 3)
+        else:
+            image = argholder.image
 
-        try:
-            flavor = re.search("(\&flavor=)([\w\-]*)", argholder.endpoint).group(2)
-        except (AttributeError, IndexError):
-            nagios_out('Unknown', 'flavor is not specified for image %s' % (image), 3)
+        if not argholder.flavor:
+            try:
+                flavor = re.search("(\&flavor=)([\w\.\-]*)", argholder.endpoint).group(2)
+            except (AttributeError, IndexError):
+                nagios_out('Unknown', 'flavor is not specified for image %s' % (image), 3)
+        else:
+            flavor = argholder.flavor
 
         if argholder.verb:
             print 'Endpoint:%s' % (argholder.endpoint)
@@ -273,8 +281,8 @@ def main():
             headers = {'content-type': 'application/json', 'accept': 'application/json'}
             headers.update({'x-auth-token': ks_token})
             payload = {'server': {'name': SERVER_NAME,
-                            'imageRef': nova_url + '/images/%s' % (image),
-                            'flavorRef': nova_url + '/flavors/%s'% (flavor_id)}}
+                                  'imageRef': nova_url + '/images/%s' % (image),
+                                  'flavorRef': nova_url + '/flavors/%s'% (flavor_id)}}
             response = requests.post(nova_url + '/servers', headers=headers,
                                      data=json.dumps(payload),
                                      cert=argholder.cert, verify=False,
