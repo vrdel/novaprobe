@@ -232,7 +232,7 @@ def main():
             nagios_out('Unknown', 'image UUID is not specifed for endpoint', 3)
 
         try:
-            flavor = re.search("(\&resource=)([\w\-]*)", argholder.endpoint).group(2)
+            flavor = re.search("(\&flavor=)([\w\-]*)", argholder.endpoint).group(2)
         except (AttributeError, IndexError):
             nagios_out('Unknown', 'flavor is not specified for image %s' % (image), 3)
 
@@ -255,7 +255,7 @@ def main():
             flavors = response.json()['flavors']
             flavor_id = None
             for f in flavors:
-                if f['name'] == flavor.replace('-', '.'):
+                if f['name'] == flavor:
                     flavor_id = f['id']
             assert flavor_id is not None
             if argholder.verb:
